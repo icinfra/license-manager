@@ -1,0 +1,126 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        /* Style the tab */
+        .tab {
+            position: sticky;
+            top: 0;
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+        }
+
+        /* Style the buttons inside the tab */
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            font-size: 17px;
+        }
+
+        /* Change background color of buttons when you hover over them */
+        .tab button:hover {
+            background-color: #ddd;
+        }
+
+        /* Create an active/current tablink class */
+        .tab button.active {
+            background-color: #ccc;
+        }
+
+        /* Sticky container */
+        .sticky-container {
+            position: sticky;
+            top: 50px;
+        }
+
+        /* Style the tab content */
+        .tabcontent {
+            width: auto;
+            /* 宽度自适应内容 */
+            height: auto;
+            /* 高度自适应内容 */
+            display: none;
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            border-top: none;
+        }
+
+        #container {
+            position: relative;
+            /* Make #container a positioned element */
+            z-index: 1000;
+            /* Set a high z-index value */
+            overflow: auto;
+            height: auto;
+            clear: both;
+        }
+
+        /* Style the table */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        #mySvg {
+            margin-top: 20px;
+            position: relative;
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="display: flex; flex-direction: column;">
+        <div class="tab">
+            <button class="tablinks" onclick="openTab(event, 'Tab1')">Features</button>
+            <button class="tablinks" onclick="openTab(event, 'Tab2')">Products</button>
+        </div>
+
+        <div id="Tab1" class="tabcontent">
+            <!-- <input type="text" id="featureName" placeholder="Enter feature name"> -->
+            <div class="sticky-container">
+                <select id="featureName"></select>
+                <button onclick="queryFeature()">Query Feature</button>
+            </div>
+
+            <div id="results"></div>
+            <div id="container" style="overflow:visible; height: auto;">
+                <svg id="mySvg" width="800" height="4000" viewBox="0 0 800 4000"></svg>
+            </div>
+
+        </div>
+        <div id="Tab2" class="tabcontent">
+            <div id="product-results"></div>
+        </div>
+    </div>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="renderer.js"></script>
+</body>
+
+</html>
