@@ -7,6 +7,8 @@ import argparse
 import os
 import sqlite3
 from os.path import expanduser
+from datetime import datetime, timezone
+import dateparser
 
 def parse_license_file(filename):
     with open(filename, 'r') as f:
@@ -14,6 +16,13 @@ def parse_license_file(filename):
         # Assuming HOSTID follows a recognizable pattern; adjust the regex as necessary
         hostid_match = re.search(r'Host Id:(.+)\n', content)
         hostid = hostid_match.group(1).strip() if hostid_match else 'Not Found'
+
+        generated_timestamp_string = re.search(r'# +Date:(.+)\n', content).group(1).strip()
+        generated_timestamp = dateparser.parse(generated_timestamp_string)
+        # Convert the datetime object to UTC
+        timestamp_utc = generated_timestamp.astimezone(timezone.utc)
+        # Format the UTC datetime object for SQLite
+        timestamp_string_in_utc = timestamp_utc.strftime("%Y-%m-%d %H:%M:%S")
 
         start_index = content.find("##     PRODUCT TO FEATURE MAPPING")
         products_data = content[start_index:].split("# Product Id  :")
@@ -27,17 +36,18 @@ def parse_license_file(filename):
         product['features'] = re.findall(r'Feature: (.+?)\s*\[', product_data)
         product['dates'] = re.findall(r'Start Date: (.+?) Exp Date: (.+?)\s*Product Qty: (\d+)', product_data)
         products.append(product)
-    return hostid, products
+    return hostid, timestamp_string_in_utc, products
 
-def store_to_db(hostid, products, filename, db_path):
+def store_to_db(hostid, generated_timestamp, products, filename, db_path):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
     # Create tables
     cursor.execute('''CREATE TABLE IF NOT EXISTS LicenseFiles
-                     (LicenseFileId INTEGER PRIMARY KEY AUTOINCREMENT, FileName TEXT UNIQUE, hostname TEXT, hostid TEXT, lmgrd_port TEXT, vendor_daemon_port TEXT, lmgrd_file_id INTEGER, vendor_daemon_file_id INTEGER, options_file_id INTEGER)''')
-    cursor.execute("INSERT OR IGNORE INTO LicenseFiles (FileName, hostid) VALUES (?, ?)", (filename, hostid,))
-    cursor.execute("SELECT LicenseFileId FROM LicenseFiles WHERE FileName=?", (filename,))
+                     (LicenseFileId INTEGER PRIMARY KEY AUTOINCREMENT, FileName TEXT UNIQUE, hostname TEXT, hostid TEXT, GeneratedTimestamp TEXT, lmgrd_port TEXT, vendor_daemon_port TEXT, lmgrd_file_id INTEGER, vendor_daemon_file_id INTEGER, options_file_id INTEGER)''')
+    cursor.execute("INSERT OR IGNORE INTO LicenseFiles (FileName, hostid, GeneratedTimestamp) VALUES (?, ?, ?)", (filename, hostid, generated_timestamp,))
+    cursor.execute("SELECT LicenseFileId FROM LicenseFiles WHERE hostid=? and GeneratedTimestamp=?", (hostid, generated_timestamp))
+    print
     license_file_id = cursor.fetchone()[0]
 
     cursor.execute('''CREATE TABLE IF NOT EXISTS LicenseRelatedFiles
@@ -97,8 +107,8 @@ def main():
         os.makedirs(dir_path)
 
     for filename in args.license_files:
-        hostid, products = parse_license_file(filename)
-        store_to_db(hostid, products, filename, db_path)
+        hostid, generated_timestamp, products = parse_license_file(filename)
+        store_to_db(hostid, generated_timestamp, products, filename, db_path)
 
 if __name__ == "__main__":
     main()
